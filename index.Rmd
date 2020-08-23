@@ -1,0 +1,608 @@
+---
+title: "R Markdown - A Better Way of Communicating with Data "
+author: "Danyang Dai"
+institute: "The University of Melbourne"
+date: August 24, 2020<br><br><br>https://rmarkdown-rladiesmelbourne.netlify.app
+output:
+  xaringan::moon_reader:
+    css: ["default", "rladies", "rladies-fonts"]
+    lib_dir: libs
+    nature:
+              highlightLines: true
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE,scipen=999)
+library(ggplot2)
+library(dplyr)
+library(sf)
+library(rworldmap)
+library(stplanr)
+library(ggrepel)
+library(emojifont)
+library(fontawesome)
+library(kableExtra)
+library(huxtable)
+library(gridExtra)
+library(icon)
+library(rworldxtra)
+library(knitr)
+knit_global() 
+```
+
+```{css, echo = FALSE}
+h2, h3 {
+  margin-bottom: 0px;
+}
+
+.highlight-output{
+  color: #88398A;
+}
+
+.footnote{
+  bottom: 2em;
+}
+```
+
+
+# About Me 
+
+- Graduated from Monash University with Bachelors of Commerce in 2018 
+- Currently a Masters Student at the University of Melbourne 
+```{r edu_plot,fig.align='center', fig.width=8, fig.height=5,dpi=300, fig.showtext=TRUE,echo=FALSE,message=FALSE, cache=TRUE}
+uni <- emojifont::fontawesome('fa-university')
+home <- emojifont::fontawesome('fa-home')
+world <- getMap(resolution = "high")
+world <- world %>% st_as_sf()
+cities <- st_sfc(
+    st_point(c(116.44163,39.925494)),
+    st_point(c(145.138,-37.9083)),
+    st_point(c(144.9614,-37.7963))
+  ) %>%
+  st_sf(name = c('Beijing','Monash University','University of Melbourne')) %>%
+  st_set_crs(4326) %>%
+  mutate(label = c(paste(home, sep = " "), rep(uni,2)))
+routes <- cities %>%
+  points2line() %>%
+  slice(c(2,7,12)) %>%
+  st_segmentize(units::set_units(100, m))
+ggplot(data = world) +
+  geom_sf(color = 'white', lwd = 0.1) +
+  xlab("") + ylab("") +
+  geom_sf_text(
+    data = cities,
+    aes(label = label),
+    size = 3,
+    color = '#009ACD',
+    family = "fontawesome-webfont"
+  ) +
+  geom_sf(
+    data = routes, color = '#009ACD', size = 0.5, alpha = 0.5, linetype = 'dotted'
+  ) +
+  coord_sf(crs = '+proj=robin', xlim = c(0, 45000000), ylim =NULL) +
+  theme_minimal() +
+  theme(
+    panel.grid = element_line(color = 'transparent'),
+     plot.margin = margin(-8, -24, -10, 0, "cm"),
+    # axis.text = element_blank(),
+    # axis.title = element_blank()
+  )
+```
+
+
+---
+
+class: center, middle
+
+# Find Me at 
+
+[`r icon::fontawesome$solid$"paper-plane"` &nbsp; danyangd@student.unimelb.edu.au](mailto:danyangd@student.unimelb.edu.au)
+
+[`r icon::fontawesome$solid$"link"` &nbsp; https://dai.netlify.app](https://dai.netlify.app)
+
+[`r icon::fontawesome$brands$"twitter"` &nbsp; @Daidaidai2014](https://twitter.com/Daidaidai2014)
+
+[`r icon::fontawesome$brands$"github"`&nbsp;@DanyangDai ](https://github.com/DanyangDai)
+
+[`r icon::fontawesome$brands$"linkedin"`&nbsp; https://www.linkedin.com/in/danyang-dai-7529b4152/](https://www.linkedin.com/in/danyang-dai-7529b4152/)
+
+
+---
+
+# Why R Markdown 
+--
+
+.center[<img src="https://media.giphy.com/media/HufOeXwDOInlK/giphy.gif" style="width:40%"/>]
+
+--
+### Hypothesis testing 
+
+--
+### Bayesian Estimation and Graphical presentation  
+
+--
+### Demonstration of Reproducible report 
+
+
+---
+
+# Case Study - Hypothesis Testing 
+.left-column[Example - yearly wage of 474 bank employees] 
+.right-column[
+- y: natural logarithm of salary (LOGSAL)
+- $x_{1}$: individual's number of completed years of schooling (EDUC)
+- $x_{2}$: information on the employee's gender (GENDER: 0 for females, 1 for males)
+- $x_{3}$: whether or not they belong to a minority group (MINORITY : 0 for non-minority, 1 for minorities)
+- $x_{4}$: a categorical variable indicating the nature of the position in which the individual is employed (JOBCAT: 1 for administrative jobs, 2 for custodial jobs, and 3 for management jobs)
+- We are interested in testing hypotheses in the model 
+- $y = \beta_{0}+\beta_{educ}x_{1}+\beta_{gender}x_{2}+\beta_{minority}x_{3}+\beta_{jobcat}x_{4}+u_{i}$
+]
+
+
+```{r,echo=FALSE,message=FALSE,cache=TRUE}
+wages <- read.csv("wages.csv")
+lm0 <- lm(LOGSAL ~ EDUC + GENDER + MINORITY + JOBCAT, data = wages)
+sum.stats0 <- summary(lm0)
+rsqr0 <- sum.stats0$r.squared
+```
+.footnote[Data provided by Professor Chris Skeels in Econometrics 3 ECOM90013]
+---
+## Hypothesis Testing
+### Does Education affect annual salary?
+.left-column[
+$H_{0}: \beta_{educ} = 0$  
+$H_{1}: \beta_{educ} \neq 0$
+]
+
+.right-column[
+```{r, tidy = TRUE,cache=TRUE}
+## LM Test
+lm0 <- lm(LOGSAL ~ GENDER + MINORITY + JOBCAT, data = wages)
+e0 <- residuals(lm0)
+lm1 <- lm(e0 ~ EDUC + GENDER + MINORITY + JOBCAT, data = wages)
+e1<- summary(lm1)
+e1rsq <- e1$r.squared
+test1 <- nrow(wages)*e1rsq
+```
+
+````markdown
+`r ''````{r, echo = FALSE, result = 'asis'}
+cat(
+  "Under the null hypothesis with degree of freedom equal to 1,",
+  " the test statistic is ",round(test1,4),
+  " and critical value is ", round(qchisq(0.95,1),4)
+)
+```
+````
+
+Under the null hypothesis with degree of freedom equal to 1
+, the test statistic is `r round(test1,4)` and the critical value is `r round(qchisq(0.95,1),4)`.
+
+]
+---
+## Does Education affect annual salary?
+
+.left-column[
+$H_{0}: \beta_{educ} = 0$  
+$H_{1}: \beta_{educ} \neq 0$
+]
+
+.right-column[
+```{r,tidy=TRUE}
+reject_h0 <- test1 > round(qchisq(0.95,1),4)
+```
+
+Since the test statistic for LM1 is `` `r knitr::inline_expr('if(reject_h0) "greater" else "smaller" ')` ``  `r if(reject_h0) "greater" else "smaller"`  than the critical, therefore we `` `r knitr::inline_expr('if(reject_h0) "" else " cannot" ')` ``  `r if(reject_h0) "" else " cannot"`  reject the null hypothesis and conclude that $\beta_{educ}$ is `` `r knitr::inline_expr('if(reject_h0) "" else " not"')` ``  `r if(reject_h0) "" else " not"`  significant at 5% level.
+
+Since the test statistic for LM1 is `r if(reject_h0) "greater" else "smaller"`  than the critical, therefore we  `r if(reject_h0) "" else "  cannot"`  reject the null hypothesis and conclude that $\beta_{educ}$ is `r if(reject_h0) "" else " not"`  significant at 5% level.]
+
+
+
+---
+## Easy? Let's do another one!
+### Does Minority and Job category affect salary? 
+
+.left-column[
+$H_{0} : \beta_{minority} =$
+$\beta_{jobcat}=0$
+$H_{1} : \beta_{minority} \neq 0$  
+or $\beta_{jobcat} \neq 0$
+]
+
+.right-column[
+```{r, tidy = TRUE,cache=TRUE}
+lmrest <-  lm(formula =  LOGSAL ~ EDUC + GENDER, data = wages)
+e2 <- summary(lmrest)$residuals
+lme2 <- lm(e2~EDUC + GENDER + MINORITY + JOBCAT, data = wages)
+e2.sqr <- summary(lme2)$r.squared
+test2 <- nrow(wages)*e2.sqr
+print("Under the null hypothesis with degree of freedom equal to 2") #<<
+print(paste0("the test statistic is ",round(test2,4))) #<<
+print(paste0("The critical value is ", round(qchisq(0.95,2),4))) #<<
+```
+]
+
+---
+### Does Minority and Job category affect salary? 
+
+.left-column[
+$H_{0} : \beta_{minority} =$
+$\beta_{jobcat}=0$
+$H_{1} : \beta_{minority} \neq 0$  
+or $\beta_{jobcat} \neq 0$
+]
+.right-column[
+```{r, tidy = TRUE,cache=TRUE}
+reject_h0.2 <- test2 > round(qchisq(0.95,2),4)
+```
+
+- Since the test statistic for LM1 is `` `r knitr::inline_expr('if(reject_h0.2) "greater" else "smaller"')` ``  `r if(reject_h0.2) "greater" else "smaller"` than the critical, therefore we  `` `r knitr::inline_expr('if(reject_h0.2) "" else "  cannot" ')` ``  `r if(reject_h0.2) "" else "  cannot"` reject the null hypothesis and conclude that `` `r knitr::inline_expr(' if(reject_h0.2) "at least one of" else "none of" ')` ``  `r if(reject_h0.2) "at least one of" else "none of"` $\beta_{minority}$ and $\beta_{jobcat}$ is significant at 5% level.
+
+- Since the test statistic for LM1 is `r if(reject_h0.2) "greater" else "smaller"`  than the critical, therefore we  `r if(reject_h0.2) "" else "  cannot"`  reject the null hypothesis and conclude that `r if(reject_h0.2) "at least one of" else "none of"` $\beta_{minority}$ and $\beta_{jobcat}$ is significant at 5% level.]
+
+
+
+---
+class: center, middle
+
+![](https://media.giphy.com/media/HufOeXwDOInlK/giphy.gif)
+
+---
+
+# Bayesian Approach - Prior Adjustments
+
+Bayes' Rule: $p(\theta|Y) \propto L(\theta|Y)p(\theta)$
+
+The posterior distribution is proportion to the kernel of posterior distribution times the distribution of the prior distribution.
+
+--
+
+We have a time series for Australian real GDP from the Australian Real-Time Macroeconomic Database containing T=230 observations on the quarterly data from quarter 3 of 1959 to the last quarter of 2016.
+
+
+
+```{r,fig.width=9, fig.height=3, echo=FALSE,message=FALSE, cache=TRUE,fig.retina = 2,fig.align='center'}
+au<- read.csv("~/Desktop/Master/S3/Macroeconometrics /Assignments/Assignment 1/au-rgdp.csv", header=TRUE)
+logau <- ts(log(au$RGDP17Q1))
+logau <- as.data.frame(logau)
+logau <-logau %>%
+  mutate(time = row_number())
+rt <- c(400*(diff(logau$x)))
+rt <- ts(rt)
+logau <-logau %>%
+  mutate(rt = c(0,rt))
+library(ggplot2)
+ggplot(data=logau,aes(x=time)) +
+  xlab("Time")+
+  ylab("Log GDP")+
+  geom_line(aes(y=x),color="blue")
+```
+.footnote[Data provided by Tomasz Wozniak in Macroeconometrics ECOM90007]
+
+---
+## Setting Prior distributions parameters 
+
+- Question: "Set the parameters of the natural-conjugate prior distribution and motivate the values that you choose."
+
+- Random Walk with drift process: $logGDP_{t}=\mu_{0}+\alpha logGDP_{t-1}+u_{t}$
+
+- $\alpha$=1
+
+- $u_{t} \sim \mathcal{N}(0,\sigma^{2})$
+
+- $P(\sigma^{2})\sim \mathcal{IG_{2}}(s,\nu)$
+
+- Priors: $\mu_{0}$, $\alpha$, $\sigma^2$, s, $\nu$
+
+--
+.center[<img src="https://media.giphy.com/media/xT0xeuOy2Fcl9vDGiA/giphy.gif" style="width:30%"/>]
+
+
+---
+## First set of priors testing 
+
+- $P(\beta=\begin{bmatrix}\mu_{0} \\ \alpha \end{bmatrix}|\sigma^2)\sim \mathcal{N}(\begin{bmatrix}0.01\\1\end{bmatrix},\sigma^2\begin{bmatrix}1&0\\0&10\end{bmatrix})$
+
+```{r, echo=FALSE,message=FALSE, cache=TRUE,fig.retina = 2,fig.align='center'}
+bay.tw = function(data,prior){
+# define data t, X and Y 
+  # debug
+  # browser()
+  t = length(data)
+  X = cbind(rep(1,t-1),data[1:t-1])
+  Y = data[2:t]
+# define prior parameters from list prior 
+  beta0 =  prior$beta0
+  varb0 = prior$varb0
+  s0 = prior$s0
+  v0 = prior$v0 
+#start calculating 
+  varb1 = solve(solve(varb0)+t(X)%*%X)
+  beta1 = varb1%*%(solve(varb0)%*%beta0+t(X)%*%Y)
+  v1 =v0 + (t-1)
+  s1 = s0+ t(Y)%*%Y+t(beta0)%*%solve(varb0)%*%beta0-t(beta1)%*%solve(varb1)%*%beta1
+
+  output      = list(
+  beta1 = beta1,
+  varb1 = varb1,
+  s1 = s1,
+  v1 = v1
+  )
+  return(output)
+}
+
+#3.2
+mc = function(post,n){
+  library(mvtnorm)
+  #extract inputs 
+  beta1 = post$beta1
+  varb1 = post$varb1
+  s1 = post$s1
+  v1 = post$v1
+  n  = n
+# Sampling random numbers from IG2 
+  set.seed(12345)
+# step 1 draw a random number from IG2
+  a = rchisq(n,v1)
+# step 2 return s1/a 
+  sigmasq = rep(s1,n)/a 
+# sampling random numbers from N(beta, sigmasq*varb1)
+# loop varaince varb1 * sigmasq 
+  b <- matrix(0,n,2)
+  for (i in (1:n))
+  {
+    varb1sq = sigmasq[i]*varb1
+    b[i,] = rmvnorm(n=1,beta1,varb1sq)
+  }
+  output = cbind(b,sigmasq)
+  return(output)
+}
+```
+
+
+
+```{r,echo=FALSE,message=FALSE, cache=TRUE,fig.retina = 2,fig.align='center'}
+prior <- list(beta0=c(0.005,1), varb0= matrix(c(1,0,0,10),2,2),s0=c(4),v0=c(6))
+#using bayesian estimation to estimate AR(1) for log GDP 
+post<- bay.tw(logau$x,prior)
+#Monte Carlo random draws 
+blogau <- mc(post,n=5000)
+#plotting trace plots 
+blogau <- as.data.frame(blogau)
+```
+
+- The sample mean of $\mu_{0}$ with 5000 draws is `r round(mean(blogau$V1),8)` and the variance is `r round(var(blogau$V1),6)`. 
+
+- The sample mean of $\alpha$ with 5000 draws is `r round(mean(blogau$V2),6)` and the variance is `r round(var(blogau$V2),8)`.
+
+- The sample mean of $\sigma^2$ with 5000 draws is `r round(mean(blogau$sigmasq),6)` and the variance is `r round(var(blogau$sigmasq),8)`.
+
+
+```{r,fig.width=9, fig.height=3,echo=FALSE,message=FALSE, cache=TRUE,fig.retina = 2,fig.align='center'}
+#ploting probability mass
+library(ggpubr)
+post.mu0 <- ggplot(data=blogau, aes(x=V1)) +
+    geom_histogram(binwidth=0.01, colour="black", fill="white")+
+    ggtitle("Distribution of mu0")+
+    xlab("mu0") 
+post.alpha <- ggplot(data=blogau, aes(x=V2)) +
+    geom_histogram(binwidth=0.001, colour="black", fill="white")+
+    ggtitle("Distribution of Alpha")+
+    xlab("alpha") 
+post.sigma<- ggplot(data=blogau, aes(x=sigmasq)) +
+    geom_histogram(binwidth=0.001, colour="black", fill="white")+
+    ggtitle("Distribution of Sigma Squared")+
+    xlab("sigmasq") 
+ggarrange(post.mu0, post.alpha, post.sigma + rremove("x.text"), 
+          labels = c("A", "B", "C"),
+          ncol = 3, nrow = 1)
+```
+
+---
+## Adjust prior parameters 
+
+- $P(\beta=\begin{bmatrix}\mu_{0} \\ \alpha \end{bmatrix}|\sigma^2)\sim \mathcal{N}(\begin{bmatrix}0.01\\1\end{bmatrix},\sigma^2\begin{bmatrix}0.1&0\\0&1\end{bmatrix})$
+
+
+```{r,echo=FALSE,message=FALSE, cache=TRUE,fig.retina = 2,fig.align='center'}
+prior.2 <- list(beta0=c(0.001,1), varb0= matrix(c(0.1,0,0,1),2,2),s0=c(4),v0=c(6))
+#using bayesian estimation to estimate AR(1) for log GDP 
+post.2<- bay.tw(logau$x,prior.2)
+#Monte Carlo random draws 
+blogau.2 <- mc(post.2,n=5000)
+#plotting trace plots 
+blogau.2 <- as.data.frame(blogau.2)
+```
+
+
+- The sample mean of $\mu_{0}$ with 5000 draws is `r round(mean(blogau.2$V1),8)` and the variance is `r round(var(blogau.2$V1),6)`. 
+
+- The sample mean of $\alpha$ with 5000 draws is `r round(mean(blogau.2$V2),6)` and the variance is `r round(var(blogau.2$V2),8)`.
+
+- The sample mean of $\sigma^2$ with 5000 draws is `r round(mean(blogau.2$sigmasq),6)` and the variance is `r round(var(blogau.2$sigmasq),8)`.
+
+
+```{r,fig.width=9, fig.height=3,echo=FALSE,message=FALSE, cache=TRUE,fig.retina = 2,fig.align='center'}
+#ploting probability mass
+post.mu0.2 <- ggplot(data=blogau.2, aes(x=V1)) +
+    geom_histogram(binwidth=0.01, colour="black", fill="white")+
+    ggtitle("Distribution of mu0")+
+    xlab("mu0") 
+post.alpha.2 <- ggplot(data=blogau.2, aes(x=V2)) +
+    geom_histogram(binwidth=0.001, colour="black", fill="white")+
+    ggtitle("Distribution of Alpha")+
+    xlab("alpha") 
+post.sigma.2<- ggplot(data=blogau.2, aes(x=sigmasq)) +
+    geom_histogram(binwidth=0.001, colour="black", fill="white")+
+    ggtitle("Distribution of Sigma Squared")+
+    xlab("sigmasq") 
+ggarrange(post.mu0.2, post.alpha.2, post.sigma.2 + rremove("x.text"), 
+          labels = c("A", "B", "C"),
+          ncol = 3, nrow = 1)
+```
+
+
+---
+## Adjust prior parameters 
+
+- $P(\beta=\begin{bmatrix}\mu_{0} \\ \alpha \end{bmatrix}|\sigma^2)\sim \mathcal{N}(\begin{bmatrix}0\\1\end{bmatrix},\sigma^2\begin{bmatrix}1&0\\0&1\end{bmatrix})$
+
+
+```{r,echo=FALSE,message=FALSE, cache=TRUE,fig.retina = 2,fig.align='center'}
+prior.3 <- list(beta0=c(0,1), varb0= matrix(c(1,0,0,10),2,2),s0=c(4),v0=c(6))
+#using bayesian estimation to estimate AR(1) for log GDP 
+post.3<- bay.tw(logau$x,prior.3)
+#Monte Carlo random draws 
+blogau.3 <- mc(post.3,n=5000)
+#plotting trace plots 
+blogau.3 <- as.data.frame(blogau.3)
+```
+
+
+- The sample mean of $\mu_{0}$ with 5000 draws is `r round(mean(blogau.3$V1),8)` and the variance is `r round(var(blogau.3$V1),6)`. 
+
+- The sample mean of $\alpha$ with 5000 draws is `r round(mean(blogau.3$V2),6)` and the variance is `r round(var(blogau.3$V2),8)`.
+
+- The sample mean of $\sigma^2$ with 5000 draws is `r round(mean(blogau.3$sigmasq),6)` and the variance is `r round(var(blogau.3$sigmasq),8)`.
+
+
+```{r,fig.width=9, fig.height=3,echo=FALSE,message=FALSE, cache=TRUE,fig.retina = 2,fig.align='center'}
+#ploting probability mass
+post.mu0.3 <- ggplot(data=blogau.3, aes(x=V1)) +
+    geom_histogram(binwidth=0.01, colour="black", fill="white")+
+    ggtitle("Distribution of mu0")+
+    xlab("mu0") 
+post.alpha.3 <- ggplot(data=blogau.3, aes(x=V2)) +
+    geom_histogram(binwidth=0.001, colour="black", fill="white")+
+    ggtitle("Distribution of Alpha")+
+    xlab("alpha") 
+post.sigma.3<- ggplot(data=blogau.3, aes(x=sigmasq)) +
+    geom_histogram(binwidth=0.001, colour="black", fill="white")+
+    ggtitle("Distribution of Sigma Squared")+
+    xlab("sigmasq") 
+ggarrange(post.mu0.3, post.alpha.3, post.sigma.3 + rremove("x.text"), 
+          labels = c("A", "B", "C"),
+          ncol = 3, nrow = 1)
+```
+
+---
+
+## Behind the Scenes 
+
+
+- The sample mean of $\mu_{0}$ with 5000 draws is `` `r knitr::inline_expr('round(mean(blogau$V1),8)', 'md')` `` and the variance is `` `r knitr::inline_expr('round(var(blogau$V1),6)')` ``. 
+
+- The sample mean of $\alpha$ with 5000 draws is `` `r knitr::inline_expr('round(mean(blogau$V2),6)') ` `` and the variance is `` `r knitr::inline_expr('round(var(blogau$V2),8)')` ``.
+
+- The sample mean of $\sigma^2$ with 5000 draws is`` `r knitr::inline_expr( 'round(mean(blogau$sigmasq),6)')` `` and the variance is `` `r knitr::inline_expr('round(var(blogau$sigmasq),8)')` ``.
+
+
+<!-- ````markdown -->
+<!-- `r ''````{r} -->
+<!-- post.mu0 <- ggplot(data=blogau, aes(x=V1)) + -->
+<!--     geom_histogram(binwidth=0.01, colour="black", fill="white")+ -->
+<!--     ggtitle("Distribution of mu0")+ -->
+<!--     xlab("mu0")  -->
+<!-- post.alpha <- ggplot(data=blogau, aes(x=V2)) + -->
+<!--     geom_histogram(binwidth=0.001, colour="black", fill="white")+ -->
+<!--     ggtitle("Distribution of Alpha")+ -->
+<!--     xlab("alpha")  -->
+<!-- post.sigma<- ggplot(data=blogau, aes(x=sigmasq)) + -->
+<!--     geom_histogram(binwidth=0.001, colour="black", fill="white")+ -->
+<!--     ggtitle("Distribution of Sigma Squared")+ -->
+<!--     xlab("sigmasq")  -->
+<!-- ggarrange(post.mu0, post.alpha, post.sigma + rremove("x.text"),  -->
+<!--           labels = c("A", "B", "C"), -->
+<!--           ncol = 3, nrow = 1) -->
+<!-- ``` -->
+<!-- ```` -->
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+```{r, eval = FALSE}
+shh, witchcraft here. Why do I need this chunk to advance to next slide?
+@yihui, please send help!
+```
+
+
+
+---
+## Outputting Plots 
+
+### R Script
+
+```{r,message=FALSE,echo=TRUE,eval=FALSE}
+pdf(file="mu0plot.pdf", height=12, width=9)
+ggplot(data=blogau, aes(x=V1)) +
+    geom_histogram(binwidth=0.01, colour="black", fill="white")+
+    ggtitle("Distribution of mu0")+
+    xlab("mu0") 
+dev.off()
+```
+
+--
+
+### R Markdown
+````markdown
+`r ''````{r,echo=FALSE,fig.height=12,fig.width=9,dev="pdf"}
+ggplot(data=blogau, aes(x=V1)) +
+    geom_histogram(binwidth=0.01, colour="black", fill="white")+
+    ggtitle("Distribution of mu0")+
+    xlab("mu0") 
+```
+````
+
+---
+class: center, middle
+# Demonstrations
+![](https://media.giphy.com/media/xT9DPIBYf0pAviBLzO/giphy.gif)
+
+
+---
+# Reference 
+
+Alison Hill, June 2019, R-Ladies xaringan theme: [`r icon::fontawesome$solid$"link"` &nbsp;](https://alison.rbind.io/project/rladies-xaringan/)
+
+Professor Chris Skeels, S1 2020,Econometrics ECOM90013, University of Melbourne  
+
+Guidotti, E., Ardia, D., (2020), "COVID-19 Data Hub", Journal of Open Source Software 5(51):2376, doi:10.21105/joss.02376.
+
+Tomasz Wozniak, S1 2020, Macroeconometrics ECOM90007, University of Melbourne
+---
+# Sources 
+
+[`r icon::fontawesome$solid$"book-open"` &nbsp; R Markdown Cheat Sheet ](https://rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
+
+[`r icon::fontawesome$solid$"book"` &nbsp;R Markdown: The Definitive Guide ](https://bookdown.org/yihui/rmarkdown/) 
+   
+[`r icon::fontawesome$solid$"question"` &nbsp;Stack Overflow ](https://stackoverflow.com/questions) 
+
+[`r icon::fontawesome$brands$"r-project"` &nbsp;RStudio Community ](https://community.rstudio.com) 
+
+[`r icon::fontawesome$solid$"users"` &nbsp; Workshops: Communicating with Data via R Markdown by Emi Tanaka](https://rmd-combine-2019.netlify.app) 
+
+### Recent Talks about R Markdown on the 2020 RStudio Conference:
+
+[`r icon::fontawesome$solid$"lightbulb"` &nbsp;One R Markdown Document, Fourteen Demos by Yihui Xie ](https://yihui.org/en/2020/02/rstudio-conf-2020/) 
+
+ [`r icon::fontawesome$solid$"bullhorn"` &nbsp;How Rmarkdown changed my life by Professor Rob J Hyndman
+](https://robjhyndman.com/seminars/rmarkdown/)
+
+[`r icon::fontawesome$solid$laptop` &nbsp; These slides!](https://rmarkdown-rladiesmelbourne.netlify.app/)
+
+---
+class: center, middle
+# Questions?
+![](https://media.giphy.com/media/5XRB3Ay93FZw4/giphy.gif)
+---
+class: center, middle
+# Stay in Touch 
+
+.center[<img src="https://media.giphy.com/media/RiykPw9tgdOylwFgUe/giphy.gif" style="width:30%"/>]
+
+[`r icon::fontawesome$solid$"paper-plane"` &nbsp; danyangd@student.unimelb.edu.au](mailto:danyangd@student.unimelb.edu.au)
+
+[`r icon::fontawesome$brands$"linkedin"`&nbsp; https://www.linkedin.com/in/danyang-dai-7529b4152/](https://www.linkedin.com/in/danyang-dai-7529b4152/)
+
+
+
