@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="" xml:lang="">
   <head>
-    <title>R markdown - A Better Way of Communicating with Data</title>
+    <title>R Markdown - A Better Way of Communicating with Data</title>
     <meta charset="utf-8" />
     <meta name="author" content="Danyang Dai" />
     <meta name="date" content="2020-08-24" />
@@ -13,7 +13,7 @@
     <textarea id="source">
 class: center, middle, inverse, title-slide
 
-# R markdown - A Better Way of Communicating with Data
+# R Markdown - A Better Way of Communicating with Data
 ### Danyang Dai
 ### The University of Melbourne
 ### August 24, 2020
@@ -152,7 +152,7 @@ Since the test statistic for LM1 is greater  than the critical, therefore we    
 
 ---
 ## Easy? Let's do another one!
-### Does Minority and Job categroy affect salary? 
+### Does Minority and Job category affect salary? 
 
 .left-column[
 `\(H_{0} : \beta_{minority} =\)`
@@ -194,7 +194,7 @@ test2 &lt;- nrow(wages) * e2.sqr
 ]
 
 ---
-### Does Minority and Job categroy affect salary? 
+### Does Minority and Job category affect salary? 
 
 .left-column[
 `\(H_{0} : \beta_{minority} =\)`
@@ -324,64 +324,73 @@ We have a time series for Australian real GDP from the Australian Real-Time Macr
 - The sample mean of `\(\sigma^2\)` with 5000 draws is`` `r round(mean(blogau$sigmasq),6)` `` and the variance is `` `r round(var(blogau$sigmasq),8)` ``.
 
 
-````markdown
-```{r}
-post.mu0 &lt;- ggplot(data=blogau, aes(x=V1)) +
-    geom_histogram(binwidth=0.01, colour="black", fill="white")+
-    ggtitle("Distribution of mu0")+
-    xlab("mu0") 
-post.alpha &lt;- ggplot(data=blogau, aes(x=V2)) +
-    geom_histogram(binwidth=0.001, colour="black", fill="white")+
-    ggtitle("Distribution of Alpha")+
-    xlab("alpha") 
-post.sigma&lt;- ggplot(data=blogau, aes(x=sigmasq)) +
-    geom_histogram(binwidth=0.001, colour="black", fill="white")+
-    ggtitle("Distribution of Sigma Squared")+
-    xlab("sigmasq") 
-ggarrange(post.mu0, post.alpha, post.sigma + rremove("x.text"), 
-          labels = c("A", "B", "C"),
-          ncol = 3, nrow = 1)
-```
-````
+&lt;!-- ````markdown --&gt;
+&lt;!-- ```{r} --&gt;
+&lt;!-- post.mu0 &lt;- ggplot(data=blogau, aes(x=V1)) + --&gt;
+&lt;!--     geom_histogram(binwidth=0.01, colour="black", fill="white")+ --&gt;
+&lt;!--     ggtitle("Distribution of mu0")+ --&gt;
+&lt;!--     xlab("mu0")  --&gt;
+&lt;!-- post.alpha &lt;- ggplot(data=blogau, aes(x=V2)) + --&gt;
+&lt;!--     geom_histogram(binwidth=0.001, colour="black", fill="white")+ --&gt;
+&lt;!--     ggtitle("Distribution of Alpha")+ --&gt;
+&lt;!--     xlab("alpha")  --&gt;
+&lt;!-- post.sigma&lt;- ggplot(data=blogau, aes(x=sigmasq)) + --&gt;
+&lt;!--     geom_histogram(binwidth=0.001, colour="black", fill="white")+ --&gt;
+&lt;!--     ggtitle("Distribution of Sigma Squared")+ --&gt;
+&lt;!--     xlab("sigmasq")  --&gt;
+&lt;!-- ggarrange(post.mu0, post.alpha, post.sigma + rremove("x.text"),  --&gt;
+&lt;!--           labels = c("A", "B", "C"), --&gt;
+&lt;!--           ncol = 3, nrow = 1) --&gt;
+&lt;!-- ``` --&gt;
+&lt;!-- ```` --&gt;
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
 
 
 ```r
-.
+shh, witchcraft here. Why do I need this chunk to advance to next slide?
+@yihui, please send help!
 ```
 
 
 
 ---
-## R Script Vs R Markdown 
+## Outputting Plots 
 
+### R Script
 
 
 ```r
-pdf(file="Ex42a.pdf", height=12, width=9)
-par(mfrow=c(1,1))
-plot.ts(blogau[,1], main=expression(blogau[t]),xlab="", ylab=expression(mu), col="magenta")
-dev.off
+pdf(file="mu0plot.pdf", height=12, width=9)
+ggplot(data=blogau, aes(x=V1)) +
+    geom_histogram(binwidth=0.01, colour="black", fill="white")+
+    ggtitle("Distribution of mu0")+
+    xlab("mu0") 
+dev.off()
 ```
 
+--
 
-
-```r
+### R Markdown
+````markdown
+```{r,echo=FALSE,fig.height=12,fig.width=9,dev="pdf"}
 ggplot(data=blogau, aes(x=V1)) +
     geom_histogram(binwidth=0.01, colour="black", fill="white")+
     ggtitle("Distribution of mu0")+
     xlab("mu0") 
 ```
+````
 
 ---
 class: center, middle
-# Demostrations
+# Demonstrations
 ![](https://media.giphy.com/media/xT9DPIBYf0pAviBLzO/giphy.gif)
 
 
 ---
 # Reference 
 
-Alison Hill, June 2019, Rladies xaringan theme: [&lt;svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="height:1em;fill:currentColor;position:relative;display:inline-block;top:.1em;"&gt;  &lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"&gt;&lt;/path&gt;&lt;/svg&gt; &amp;nbsp;](https://alison.rbind.io/project/rladies-xaringan/)
+Alison Hill, June 2019, R-Ladies xaringan theme: [&lt;svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="height:1em;fill:currentColor;position:relative;display:inline-block;top:.1em;"&gt;  &lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"&gt;&lt;/path&gt;&lt;/svg&gt; &amp;nbsp;](https://alison.rbind.io/project/rladies-xaringan/)
 
 Professor Chris Skeels, S1 2020,Econometrics ECOM90013, University of Melbourne  
 
