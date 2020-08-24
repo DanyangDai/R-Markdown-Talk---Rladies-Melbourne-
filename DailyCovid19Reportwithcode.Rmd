@@ -1,0 +1,56 @@
+---
+title: "Australia Covid19 Daily Updates"
+author: "Danyang Dai"
+date: "23/08/2020"
+output: 
+  html_document:
+    theme: journal
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(COVID19)
+library(ggplot2)
+library(dplyr)
+```
+
+
+
+```{r data,include=FALSE}
+# importing data from the COVID19 database
+aus19 <- covid19(country = 36, level = 2) %>%
+  rename(state = administrative_area_level_2) %>%
+  ungroup() %>%
+  select(date, state, tests, confirmed, recovered, deaths)
+
+today <- aus19 %>%
+  filter(date == max(date))
+
+vic <- aus19 %>%
+  filter(state=="Victoria")
+```
+
+
+# Coronavirus update for Australia - `r max(today$date)`
+
+Victoria has recorded total `r max(vic$confirmed)` of coronavirus with the total number of tests now at `r max(vic$tests)`.  
+
+## Cases by States 
+
+Below is the number of cases by each state: 
+
+```{r}
+today %>% knitr::kable(caption = "Today's Cases")
+```
+
+
+## Historical Case Overtime 
+
+Below is accumulated cases by each state:
+
+```{r}
+ggplot(data=aus19,aes(x=date))+
+  geom_line(aes(y=confirmed,color=state))
+```
+
